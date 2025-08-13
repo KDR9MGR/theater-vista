@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -44,10 +46,43 @@ export function VendorsTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchVendors();
   }, []);
+
+  const handleVerificationToggle = async (vendorId: string, isVerified: boolean) => {
+    try {
+      const newStatus = isVerified ? 'verified' : 'pending';
+      
+      const { error } = await supabase
+        .from('vendors')
+        .update({ verification_status: newStatus })
+        .eq('id', vendorId);
+
+      if (error) throw error;
+
+      // Update local state
+      setVendors(prev => prev.map(vendor => 
+        vendor.id === vendorId 
+          ? { ...vendor, verification_status: newStatus }
+          : vendor
+      ));
+
+      toast({
+        title: "Success",
+        description: `Vendor ${isVerified ? 'verified' : 'unverified'} successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating vendor verification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update vendor verification status.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     filterVendors();
@@ -162,6 +197,7 @@ export function VendorsTable() {
               <TableHead className="font-medium text-foreground">Phone</TableHead>
               <TableHead className="font-medium text-foreground">Type</TableHead>
               <TableHead className="font-medium text-foreground">Status</TableHead>
+              <TableHead className="font-medium text-foreground">Verified</TableHead>
               <TableHead className="font-medium text-foreground">Created</TableHead>
               <TableHead className="font-medium text-foreground w-12">Actions</TableHead>
             </TableRow>
@@ -193,6 +229,12 @@ export function VendorsTable() {
                   <Badge className={`${getStatusColor(vendor.verification_status)} capitalize`}>
                     {vendor.verification_status}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={vendor.verification_status === 'verified'}
+                    onCheckedChange={(checked) => handleVerificationToggle(vendor.id, checked)}
+                  />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(vendor.created_at).toLocaleDateString()}

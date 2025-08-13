@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Building2, Users, Theater, BarChart3, Settings, Database } from 'lucide-react';
+import { Building2, Users, Theater, BarChart3, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -33,16 +33,14 @@ export function AdminSidebar() {
     <Sidebar className="bg-sidebar border-r border-sidebar-border" collapsible="icon">
       <SidebarContent className="bg-sidebar">
         <div className="p-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-sidebar-accent rounded-lg flex items-center justify-center">
-              <Database className="w-4 h-4 text-sidebar-accent-foreground" />
+          <div className="flex items-center justify-center">
+            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2">
+              <img 
+                src="/app_logo.svg" 
+                alt="Logo" 
+                className="w-full h-full object-contain filter invert"
+              />
             </div>
-            {!isCollapsed && (
-              <div>
-                <h2 className="text-lg font-semibold text-sidebar-foreground">Theater Vista</h2>
-                <p className="text-xs text-sidebar-foreground/60">Admin Dashboard</p>
-              </div>
-            )}
           </div>
         </div>
 

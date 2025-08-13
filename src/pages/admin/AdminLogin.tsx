@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Shield } from 'lucide-react';
 
-const ADMIN_UUID = '7d913fb2-24cb-4c81-b974-133251e34ab2';
+// Remove hardcoded UUID check, use role-based authentication instead
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -20,7 +20,9 @@ export default function AdminLogin() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id === ADMIN_UUID) {
+      // Check specifically for admin role in metadata, not the main user role which is always 'authenticated'
+      const userMetadata = session?.user?.user_metadata || (session?.user as any)?.raw_user_meta_data;
+      if (userMetadata?.role === 'admin') {
         navigate('/admin');
       }
     };
@@ -43,7 +45,9 @@ export default function AdminLogin() {
         return;
       }
 
-      if (data.user?.id !== ADMIN_UUID) {
+      // Check if user has admin role in metadata
+      const userMetadata = data.user?.user_metadata || (data.user as any)?.raw_user_meta_data;
+      if (userMetadata?.role !== 'admin') {
         setError('Access denied. Admin privileges required.');
         await supabase.auth.signOut();
         return;

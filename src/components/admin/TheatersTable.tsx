@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -48,10 +50,43 @@ export function TheatersTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchTheaters();
   }, []);
+
+  const handleVerificationToggle = async (theaterId: string, isApproved: boolean) => {
+    try {
+      const newStatus = isApproved ? 'approved' : 'pending';
+      
+      const { error } = await supabase
+        .from('private_theaters')
+        .update({ approval_status: newStatus })
+        .eq('id', theaterId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTheaters(prev => prev.map(theater => 
+        theater.id === theaterId 
+          ? { ...theater, approval_status: newStatus }
+          : theater
+      ));
+
+      toast({
+        title: "Success",
+        description: `Theater ${isApproved ? 'approved' : 'unapproved'} successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating theater approval:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update theater approval status.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     filterTheaters();
@@ -159,6 +194,7 @@ export function TheatersTable() {
               <TableHead className="font-medium text-foreground">Rate/Hour</TableHead>
               <TableHead className="font-medium text-foreground">Rating</TableHead>
               <TableHead className="font-medium text-foreground">Status</TableHead>
+              <TableHead className="font-medium text-foreground">Verified</TableHead>
               <TableHead className="font-medium text-foreground">Created</TableHead>
               <TableHead className="font-medium text-foreground w-12">Actions</TableHead>
             </TableRow>
@@ -209,6 +245,12 @@ export function TheatersTable() {
                   <Badge className={`${getStatusColor(theater.approval_status)} capitalize`}>
                     {theater.approval_status}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={theater.approval_status === 'approved'}
+                    onCheckedChange={(checked) => handleVerificationToggle(theater.id, checked)}
+                  />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(theater.created_at).toLocaleDateString()}

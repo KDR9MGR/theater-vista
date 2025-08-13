@@ -8,7 +8,7 @@ interface AdminAuthGuardProps {
   children: React.ReactNode;
 }
 
-const ADMIN_UUID = '7d913fb2-24cb-4c81-b974-133251e34ab2';
+// Use role-based authentication instead of hardcoded UUID
 
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -25,8 +25,9 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
           return;
         }
 
-        // Check if user is admin
-        if (session.user.id !== ADMIN_UUID) {
+        // Check if user has admin role in metadata
+        const userMetadata = session.user.user_metadata || (session.user as any).raw_user_meta_data;
+        if (userMetadata?.role !== 'admin') {
           navigate('/');
           return;
         }
@@ -44,10 +45,17 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!session?.user || session.user.id !== ADMIN_UUID) {
+        if (!session?.user) {
           navigate('/admin/login');
           return;
         }
+        
+        const userMetadata = session.user.user_metadata || (session.user as any).raw_user_meta_data;
+        if (userMetadata?.role !== 'admin') {
+          navigate('/admin/login');
+          return;
+        }
+        
         setUser(session.user);
         setIsLoading(false);
       }
