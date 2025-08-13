@@ -61,7 +61,35 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Admin Dashboard Status Colors
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
+				// Table specific colors
+				table: {
+					header: 'hsl(var(--table-header))',
+					'row-hover': 'hsl(var(--table-row-hover))',
+					border: 'hsl(var(--table-border))'
 				}
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-subtle': 'var(--gradient-subtle)'
+			},
+			boxShadow: {
+				'admin-sm': 'var(--shadow-sm)',
+				'admin-md': 'var(--shadow-md)',
+				'admin-lg': 'var(--shadow-lg)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
