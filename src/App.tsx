@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminVendors from "./pages/admin/AdminVendors";
+import AdminVendorDetails from "./pages/admin/AdminVendorDetails";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminTheaters from "./pages/admin/AdminTheaters";
 import AdminTheme from "./pages/admin/AdminTheme";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="vendors" element={<AdminVendors />} />
+            <Route path="vendors/:vendorId" element={<AdminVendorDetails />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="theaters" element={<AdminTheaters />} />
             <Route path="theme" element={<AdminTheme />} />

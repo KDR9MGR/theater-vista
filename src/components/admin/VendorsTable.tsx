@@ -206,7 +206,8 @@ export function VendorsTable() {
             {filteredVendors.map((vendor) => (
               <TableRow
                 key={vendor.id}
-                className="border-table-border hover:bg-table-row-hover transition-admin-colors"
+                className="border-table-border hover:bg-table-row-hover transition-admin-colors cursor-pointer"
+                onClick={() => window.open(`/admin/vendors/${vendor.id}`, '_blank')}
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
