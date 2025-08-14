@@ -11,10 +11,10 @@ import AdminVendors from "./pages/admin/AdminVendors";
 import AdminVendorDetails from "./pages/admin/AdminVendorDetails";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminTheaters from "./pages/admin/AdminTheaters";
-import AdminTheaterDetails from "./pages/admin/AdminTheaterDetails";
 import AdminTheme from "./pages/admin/AdminTheme";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminTheaterDetails from "./pages/admin/AdminTheaterDetails";
 
 const queryClient = new QueryClient();
 

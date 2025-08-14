@@ -1,24 +1,18 @@
-import React, { useState } from 'react';
-import { ServiceListingsTable } from '@/components/admin/ServiceListingsTable';
-import { CreateServiceDialog } from '@/components/admin/CreateServiceDialog';
+import React from 'react';
+import { EventDecoratorsTable } from '@/components/admin/EventDecoratorsTable';
+
 
 export default function AdminServices() {
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleServiceCreated = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Service Listings</h1>
-          <p className="text-muted-foreground">Manage service offerings, pricing, and availability</p>
+          <h1 className="text-3xl font-bold text-foreground">Event Decorators</h1>
+          <p className="text-muted-foreground">Manage event decoration vendors and their services</p>
         </div>
-        <CreateServiceDialog onServiceCreated={handleServiceCreated} />
       </div>
-      <ServiceListingsTable key={refreshKey} />
+
+      <EventDecoratorsTable />
     </div>
   );
 }

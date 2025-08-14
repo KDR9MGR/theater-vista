@@ -23,7 +23,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/admin", icon: BarChart3 },
   { title: "Vendors", url: "/admin/vendors", icon: Users },
-  { title: "Service Listings", url: "/admin/services", icon: Building2 },
+  { title: "Event Decorators", url: "/admin/services", icon: Building2 },
   { title: "Private Theaters", url: "/admin/theaters", icon: Theater },
   { title: "App Theme Settings", url: "/admin/theme", icon: Palette },
   { title: "Settings", url: "/admin/settings", icon: Settings },

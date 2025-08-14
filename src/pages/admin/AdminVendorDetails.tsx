@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Download, Eye, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -139,6 +139,36 @@ export default function AdminVendorDetails() {
       'other': 'Other Document'
     };
     return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const handleDocumentVerification = async (documentId: string, status: 'verified' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('vendor_documents')
+        .update({
+          verification_status: status,
+          verified_at: status === 'verified' ? new Date().toISOString() : null,
+          notes: status === 'rejected' ? 'Document rejected by admin' : null
+        })
+        .eq('id', documentId);
+
+      if (error) throw error;
+
+      // Refresh the documents list
+      await fetchVendorDocuments();
+
+      toast({
+        title: "Success",
+        description: `Document ${status} successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating document:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${status === 'verified' ? 'accept' : 'reject'} document.`,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -347,6 +377,29 @@ export default function AdminVendorDetails() {
                           </div>
                           {document.notes && (
                             <p className="text-xs text-muted-foreground mt-1">{document.notes}</p>
+                          )}
+                          {/* Accept/Reject Buttons */}
+                          {document.verification_status === 'pending' && (
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                onClick={() => handleDocumentVerification(document.id, 'verified')}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                onClick={() => handleDocumentVerification(document.id, 'rejected')}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
                           )}
                         </div>
                       ) : (
