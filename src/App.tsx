@@ -11,6 +11,7 @@ import AdminVendors from "./pages/admin/AdminVendors";
 import AdminVendorDetails from "./pages/admin/AdminVendorDetails";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminTheaters from "./pages/admin/AdminTheaters";
+import AdminTheaterDetails from "./pages/admin/AdminTheaterDetails";
 import AdminTheme from "./pages/admin/AdminTheme";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="vendors/:vendorId" element={<AdminVendorDetails />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="theaters" element={<AdminTheaters />} />
+            <Route path="theaters/:theaterId" element={<AdminTheaterDetails />} />
             <Route path="theme" element={<AdminTheme />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

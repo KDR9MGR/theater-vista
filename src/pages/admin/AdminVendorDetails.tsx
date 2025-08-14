@@ -35,16 +35,30 @@ interface VendorDetails {
   is_online: boolean;
 }
 
+interface VendorDocument {
+  id: string;
+  vendor_id: string;
+  document_type: string;
+  document_url: string;
+  verification_status: string;
+  verified_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function AdminVendorDetails() {
   const { vendorId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [vendor, setVendor] = useState<VendorDetails | null>(null);
+  const [vendorDocuments, setVendorDocuments] = useState<VendorDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (vendorId) {
       fetchVendorDetails();
+      fetchVendorDocuments();
     }
   }, [vendorId]);
 
@@ -70,6 +84,26 @@ export default function AdminVendorDetails() {
     }
   };
 
+  const fetchVendorDocuments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .select('*')
+        .eq('vendor_id', vendorId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVendorDocuments(data || []);
+    } catch (error) {
+      console.error('Error fetching vendor documents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch vendor documents.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'verified': return 'bg-success text-success-foreground';
@@ -90,6 +124,21 @@ export default function AdminVendorDetails() {
 
   const openImageInNewTab = (imageUrl: string) => {
     window.open(imageUrl, '_blank');
+  };
+
+  const formatDocumentType = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      'identity_aadhaar_front': 'Aadhaar Card (Front)',
+      'identity_aadhaar_back': 'Aadhaar Card (Back)',
+      'identity_pan': 'PAN Card',
+      'identity_driving_license': 'Driving License',
+      'business_license': 'Business License',
+      'business_registration': 'Business Registration',
+      'business_gst': 'GST Certificate',
+      'bank_passbook': 'Bank Passbook',
+      'other': 'Other Document'
+    };
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (loading) {
@@ -264,61 +313,58 @@ export default function AdminVendorDetails() {
               <h2 className="text-xl font-semibold text-foreground">Documents & Verification</h2>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Business License */}
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Business License</label>
-                  {vendor.business_license_url ? (
-                    <div className="mt-2">
-                      <div className="relative group">
-                        <img
-                          src={vendor.business_license_url}
-                          alt="Business License"
-                          className="w-full h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => openImageInNewTab(vendor.business_license_url)}
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                          <Button size="sm" variant="secondary" onClick={() => openImageInNewTab(vendor.business_license_url)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Full Size
-                          </Button>
-                        </div>
+              {vendorDocuments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {vendorDocuments.map((document) => (
+                    <div key={document.id}>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-muted-foreground">
+                          {formatDocumentType(document.document_type)}
+                        </label>
+                        <Badge 
+                          variant={document.verification_status === 'verified' ? 'default' : 
+                                 document.verification_status === 'pending' ? 'secondary' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {document.verification_status}
+                        </Badge>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">Not uploaded</p>
-                  )}
-                </div>
-
-                {/* Identity Verification */}
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Identity Verification</label>
-                  {vendor.identity_verification_url ? (
-                    <div className="mt-2">
-                      <div className="relative group">
-                        <img
-                          src={vendor.identity_verification_url}
-                          alt="Identity Verification"
-                          className="w-full h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => openImageInNewTab(vendor.identity_verification_url)}
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                          <Button size="sm" variant="secondary" onClick={() => openImageInNewTab(vendor.identity_verification_url)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Full Size
-                          </Button>
+                      {document.document_url ? (
+                        <div className="mt-2">
+                          <div className="relative group">
+                            <img
+                              src={document.document_url}
+                              alt={formatDocumentType(document.document_type)}
+                              className="w-full h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => openImageInNewTab(document.document_url)}
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                              <Button size="sm" variant="secondary" onClick={() => openImageInNewTab(document.document_url)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Full Size
+                              </Button>
+                            </div>
+                          </div>
+                          {document.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">{document.notes}</p>
+                          )}
                         </div>
-                      </div>
+                      ) : (
+                        <p className="text-muted-foreground mt-1">Not uploaded</p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">Not uploaded</p>
-                  )}
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-2">No documents found for this vendor.</p>
+                  <p className="text-sm text-muted-foreground">Documents will appear here once uploaded to the vendor_documents table.</p>
+                </div>
+              )}
 
               {/* Portfolio Images */}
               {vendor.portfolio_images && Array.isArray(vendor.portfolio_images) && vendor.portfolio_images.length > 0 && (
-                <div>
+                <div className="mt-6">
                   <label className="text-sm font-medium text-muted-foreground">Portfolio Images</label>
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
                     {vendor.portfolio_images.map((image: string, index: number) => (

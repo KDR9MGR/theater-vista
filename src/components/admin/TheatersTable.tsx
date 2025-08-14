@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, MoreHorizontal, Eye, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ export function TheatersTable() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTheaters();
@@ -203,7 +205,8 @@ export function TheatersTable() {
             {filteredTheaters.map((theater) => (
               <TableRow
                 key={theater.id}
-                className="border-table-border hover:bg-table-row-hover transition-admin-colors"
+                className="border-table-border hover:bg-table-row-hover transition-admin-colors cursor-pointer"
+                onClick={() => navigate(`/admin/theaters/${theater.id}`)}
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
@@ -247,10 +250,12 @@ export function TheatersTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Switch
-                    checked={theater.approval_status === 'approved'}
-                    onCheckedChange={(checked) => handleVerificationToggle(theater.id, checked)}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                      checked={theater.approval_status === 'approved'}
+                      onCheckedChange={(checked) => handleVerificationToggle(theater.id, checked)}
+                    />
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(theater.created_at).toLocaleDateString()}
@@ -258,12 +263,20 @@ export function TheatersTable() {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/theaters/${theater.id}`);
+                      }}>
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>

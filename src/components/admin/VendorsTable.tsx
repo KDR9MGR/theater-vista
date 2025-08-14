@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreHorizontal, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,8 +46,9 @@ export function VendorsTable() {
   const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchVendors();
@@ -100,7 +102,7 @@ export function VendorsTable() {
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -139,7 +141,7 @@ export function VendorsTable() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="p-6">
         <div className="animate-pulse space-y-4">
@@ -207,7 +209,7 @@ export function VendorsTable() {
               <TableRow
                 key={vendor.id}
                 className="border-table-border hover:bg-table-row-hover transition-admin-colors cursor-pointer"
-                onClick={() => window.open(`/admin/vendors/${vendor.id}`, '_blank')}
+                onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
