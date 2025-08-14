@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, MapPin, Star, Users, Clock, DollarSign, Calendar, Phone, Mail, Search, Edit, Eye, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { EditPanel } from './EditPanel';
+import { ServiceListingsTable } from './admin/ServiceListingsTable';
 
 interface Vendor {
   id: string;
@@ -199,100 +200,7 @@ export function VendorDetailsPanel({ vendor, onBack }: VendorDetailsPanelProps) 
         <h3 className="text-lg font-semibold">Service Listings ({serviceListings.length})</h3>
       </div>
       
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <Input
-          placeholder="Search services by title, category, or description..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-      
-      {filteredServiceListings.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center text-gray-500">
-            {searchTerm ? `No services found matching "${searchTerm}"` : 'No service listings found for this vendor.'}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredServiceListings.map((service) => (
-            <Card key={service.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3">
-                      {/* Service Image */}
-                      {service.images && service.images.length > 0 ? (
-                        <img 
-                          src={service.images[0]} 
-                          alt={service.title}
-                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Image className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg">{service.title}</h4>
-                        <Badge variant="secondary" className="mt-1">
-                          {service.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setSelectedService(service)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditService(service)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(service.original_price)}
-                      </span>
-                      <span className="text-lg font-bold text-green-600">
-                        {formatPrice(service.offer_price)}
-                      </span>
-                    </div>
-                    <div className="text-sm text-green-600">
-                      {Math.round(((parseFloat(service.original_price) - parseFloat(service.offer_price)) / parseFloat(service.original_price)) * 100)}% OFF
-                    </div>
-                  </div>
-                </div>
-                
-                {service.description && (
-                  <p className="text-gray-600 text-sm mb-3">{service.description}</p>
-                )}
-                
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>Created: {new Date(service.created_at).toLocaleDateString()}</span>
-                  <span>ID: {service.id.slice(0, 8)}...</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <ServiceListingsTable vendorId={vendor.id} />
     </div>
   );
 

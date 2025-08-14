@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface ServiceListing {
   id: string;
@@ -39,19 +40,27 @@ interface ServiceListing {
   reviews_count: number;
   created_at: string;
   vendor_id: string;
+  cover_photo: string;
+  photos: string[];
+  description: string;
 }
 
-export function ServiceListingsTable() {
+interface ServiceListingsTableProps {
+  vendorId?: string;
+}
+
+export function ServiceListingsTable({ vendorId }: ServiceListingsTableProps) {
   const [services, setServices] = useState<ServiceListing[]>([]);
   const [filteredServices, setFilteredServices] = useState<ServiceListing[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchServices();
-  }, []);
+  }, [vendorId]);
 
   useEffect(() => {
     filterServices();
@@ -59,10 +68,16 @@ export function ServiceListingsTable() {
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('service_listings')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (vendorId) {
+        query = query.eq('vendor_id', vendorId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setServices(data || []);
@@ -168,7 +183,7 @@ export function ServiceListingsTable() {
         <Table>
           <TableHeader className="bg-table-header">
             <TableRow className="border-table-border">
-              <TableHead className="font-medium text-foreground">Title</TableHead>
+              <TableHead className="font-medium text-foreground">Service</TableHead>
               <TableHead className="font-medium text-foreground">Category</TableHead>
               <TableHead className="font-medium text-foreground">Price</TableHead>
               <TableHead className="font-medium text-foreground">Rating</TableHead>
@@ -185,13 +200,28 @@ export function ServiceListingsTable() {
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">
-                        {service.title?.charAt(0) || '?'}
-                      </span>
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {service.cover_photo ? (
+                        <img 
+                          src={service.cover_photo} 
+                          alt={service.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full bg-primary/10 flex items-center justify-center ${service.cover_photo ? 'hidden' : ''}`}>
+                        <span className="text-xs font-medium text-primary">
+                          {service.title?.charAt(0) || '?'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium">{service.title || 'Untitled Service'}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{service.title || 'Untitled Service'}</div>
+                      <div className="text-sm text-muted-foreground truncate">{service.description}</div>
                       {service.is_featured && (
                         <Badge className="text-xs bg-warning text-warning-foreground mt-1">Featured</Badge>
                       )}
@@ -241,7 +271,7 @@ export function ServiceListingsTable() {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/service-listings/${service.id}/edit`)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Service
                       </DropdownMenuItem>

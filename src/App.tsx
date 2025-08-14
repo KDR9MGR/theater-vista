@@ -15,6 +15,7 @@ import AdminTheme from "./pages/admin/AdminTheme";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminTheaterDetails from "./pages/admin/AdminTheaterDetails";
+import { ServiceListingEdit } from "./pages/admin/ServiceListingEdit";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="vendors/:vendorId" element={<AdminVendorDetails />} />
             <Route path="services" element={<AdminServices />} />
+            <Route path="service-listings/:id/edit" element={<ServiceListingEdit />} />
             <Route path="theaters" element={<AdminTheaters />} />
             <Route path="theaters/:theaterId" element={<AdminTheaterDetails />} />
             <Route path="theme" element={<AdminTheme />} />
