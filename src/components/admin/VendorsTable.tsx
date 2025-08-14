@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -213,11 +214,12 @@ export function VendorsTable() {
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={vendor.profile_image_url} alt={vendor.full_name} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
                         {vendor.full_name?.charAt(0) || '?'}
-                      </span>
-                    </div>
+                      </AvatarFallback>
+                    </Avatar>
                     <span>{vendor.full_name || 'N/A'}</span>
                   </div>
                 </TableCell>
