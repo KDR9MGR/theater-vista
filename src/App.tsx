@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminVendors from "./pages/admin/AdminVendors";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminTheaters from "./pages/admin/AdminTheaters";
+import AdminTheme from "./pages/admin/AdminTheme";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/admin/AdminLogin";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="theaters" element={<AdminTheaters />} />
+            <Route path="theme" element={<AdminTheme />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Building2, Users, Theater, BarChart3, Settings } from 'lucide-react';
+import { Building2, Users, Theater, BarChart3, Settings, Palette } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const menuItems = [
   { title: 'Vendors', url: '/admin/vendors', icon: Users },
   { title: 'Service Listings', url: '/admin/services', icon: Building2 },
   { title: 'Private Theaters', url: '/admin/theaters', icon: Theater },
+  { title: 'App Theme Settings', url: '/admin/theme', icon: Palette },
   { title: 'Settings', url: '/admin/settings', icon: Settings },
 ];
 
