@@ -33,16 +33,60 @@ interface TheaterDetails {
   owner_id?: string | null;
 }
 
+interface TheaterScreen {
+  id: string;
+  screen_name: string;
+  screen_number: number;
+  capacity: number;
+  hourly_rate: number;
+  is_active: boolean | null;
+  amenities: string[] | null;
+  images: string[] | null;
+  theater_id: string;
+  created_at: string | null;
+  total_capacity?: number;
+  allowed_capacity?: number;
+  charges_extra_per_person?: number;
+  video_url?: string;
+  original_hourly_price?: number;
+  discounted_hourly_price?: number;
+}
+
+interface TheaterTimeSlot {
+  id: string;
+  start_time: string;
+  end_time: string;
+  price_per_hour: number | null;
+  is_active: boolean | null;
+  is_available: boolean | null;
+  screen_id: string | null;
+  theater_id: string;
+  created_at: string | null;
+  base_price?: number;
+  price_multiplier?: number;
+  weekday_multiplier?: number;
+  weekend_multiplier?: number;
+  holiday_multiplier?: number;
+  max_duration_hours?: number;
+  min_duration_hours?: number;
+}
+
 export default function AdminTheaterDetails() {
   const { theaterId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [theater, setTheater] = useState<TheaterDetails | null>(null);
+  const [screens, setScreens] = useState<TheaterScreen[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TheaterTimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [screensLoading, setScreensLoading] = useState(false);
+  const [timeSlotsLoading, setTimeSlotsLoading] = useState(false);
 
   useEffect(() => {
     if (theaterId) {
       fetchTheaterDetails();
+      fetchTheaterScreens();
+      fetchTimeSlots();
     }
   }, [theaterId]);
 
@@ -75,6 +119,88 @@ export default function AdminTheaterDetails() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTheaterScreens = async () => {
+    try {
+      setScreensLoading(true);
+      console.log('Fetching theater screens for theater ID:', theaterId);
+      
+      const { data, error } = await supabase
+        .from('theater_screens')
+        .select('*')
+        .eq('theater_id', theaterId)
+        .order('screen_number', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching theater screens:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        toast({
+          title: "Error",
+          description: `Failed to fetch theater screens: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Theater screens fetched successfully:', data);
+      setScreens(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while fetching screens",
+        variant: "destructive",
+      });
+    } finally {
+      setScreensLoading(false);
+    }
+  };
+
+  const fetchTimeSlots = async () => {
+    try {
+      setTimeSlotsLoading(true);
+      console.log('Fetching time slots for theater ID:', theaterId);
+      
+      const { data, error } = await supabase
+        .from('theater_time_slots')
+        .select('*')
+        .eq('theater_id', theaterId)
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching time slots:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        toast({
+          title: "Error",
+          description: `Failed to fetch time slots: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Time slots fetched successfully:', data);
+      setTimeSlots(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while fetching time slots",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeSlotsLoading(false);
     }
   };
 
@@ -243,6 +369,89 @@ export default function AdminTheaterDetails() {
                 </div>
               </div>
             </div>
+          </Card>
+
+          {/* Theater Screens Section */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Theater Screens</h3>
+            {screensLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : screens.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {screens.map((screen) => (
+                  <div key={screen.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900">{screen.screen_name}</h4>
+                      <Badge className="bg-blue-100 text-blue-800">
+                        Screen #{screen.screen_number}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Capacity:</span>
+                        <span className="font-medium">{screen.capacity} seats</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Hourly Rate:</span>
+                        <span className="font-medium">₹{screen.hourly_rate}/hour</span>
+                      </div>
+                      {screen.amenities && screen.amenities.length > 0 && (
+                        <div>
+                          <span className="block mb-1">Amenities:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {screen.amenities.map((amenity, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {amenity}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-8">No screens found for this theater.</p>
+            )}
+          </Card>
+
+          {/* Time Slots Section */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Time Slots</h3>
+            {timeSlotsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : timeSlots.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {timeSlots.map((slot) => {
+                  const screenName = screens.find(s => s.id === slot.screen_id)?.screen_name || 'Unknown Screen';
+                  return (
+                    <div key={slot.id} className="bg-white border rounded p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900">
+                          {slot.start_time} - {slot.end_time}
+                        </span>
+                        <Badge className={slot.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {slot.is_available ? 'Available' : 'Booked'}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div>Screen: {screenName}</div>
+                        {slot.price_per_hour && (
+                          <div>Price: ₹{slot.price_per_hour}/hour</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-8">No time slots found for this theater.</p>
+            )}
           </Card>
         </div>
 
