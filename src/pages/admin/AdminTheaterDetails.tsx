@@ -104,18 +104,6 @@ export default function AdminTheaterDetails() {
       // Load sample add-ons data
       setAddOns([
         {
-          id: '1',
-          name: 'Premium Sound System',
-          price: 500,
-          image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop'
-        },
-        {
-          id: '2',
-          name: 'LED Lighting Package',
-          price: 300,
-          image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=100&h=100&fit=crop'
-        },
-        {
           id: '3',
           name: 'Decoration Package',
           price: 200,
@@ -885,252 +873,78 @@ export default function AdminTheaterDetails() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
               </div>
             ) : screens.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {screens.map((screen) => (
-                  <div key={screen.id} className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {editingScreen === screen.id ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={editValues[`${screen.id}_name`] || ''}
-                              onChange={(e) => setEditValues({ ...editValues, [`${screen.id}_name`]: e.target.value })}
-                              className="h-8 text-sm font-semibold"
-                              placeholder="Screen name"
-                            />
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditSave(screen.id, 'name')}
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditCancel(screen.id, 'name')}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">{screen.screen_name}</h4>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditStart(screen.id, 'name', screen.screen_name)}
-                              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <Badge className="bg-blue-100 text-blue-800">
-                        Screen #{screen.screen_number}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div className="flex justify-between">
-                        <span>Capacity:</span>
-                        <span className="font-medium">{screen.capacity} seats</span>
-                      </div>
-                    
-                      <div className="flex justify-between items-center">
-                        <span>Discounted Rate:</span>
-                        {editingPrice === screen.id ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={editValues[`${screen.id}_price`] || ''}
-                              onChange={(e) => setEditValues({ ...editValues, [`${screen.id}_price`]: e.target.value })}
-                              className="h-6 w-20 text-xs"
-                              placeholder="0"
-                              min="0"
-                              step="0.01"
-                            />
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditSave(screen.id, 'price')}
-                              className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
-                            >
-                              <Check className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditCancel(screen.id, 'price')}
-                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {screen.discounted_hourly_price ? `₹${screen.discounted_hourly_price}` : 'Not set'}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditStart(screen.id, 'price', screen.discounted_hourly_price || 0)}
-                              className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600"
-                            >
-                              <Edit2 className="h-2 w-2" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <span className="block mb-1">Amenities:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {screen.amenities && screen.amenities.map((amenity, index) => (
-                            <Badge key={index} variant="outline" className="text-xs group relative">
-                              {amenity}
-                              <button
-                                onClick={() => removeAmenity(screen.id, index)}
-                                className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                                title="Remove amenity"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                          {editingAmenity === screen.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={newAmenity}
-                                onChange={(e) => setNewAmenity(e.target.value)}
-                                placeholder="Enter amenity"
-                                className="h-6 text-xs w-24"
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleAddAmenitySave(screen.id);
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => handleAddAmenitySave(screen.id)}
-                                className="h-6 px-2"
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleAddAmenityCancel}
-                                className="h-6 px-2"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-xs cursor-pointer hover:bg-gray-100 border-dashed"
-                              onClick={() => handleAddAmenityStart(screen.id)}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Amenity
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Screen Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Screen Number
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Capacity
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hourly Rate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Discounted Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {screens.map((screen) => (
+                      <tr key={screen.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {screen.screen_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {screen.screen_number}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {screen.capacity} seats
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          ₹{screen.hourly_rate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {screen.discounted_hourly_price ? `₹${screen.discounted_hourly_price}` : 'Not set'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={screen.is_active ? 'default' : 'secondary'}>
+                            {screen.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/admin/theaters/${theater.id}/screens/${screen.id}/edit`)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit2 className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="text-gray-600 text-center py-8">No screens found for this theater.</p>
             )}
           </Card>
 
-          {/* Time Slots Section */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Time Slots</h3>
-            {timeSlotsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              </div>
-            ) : timeSlots.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {timeSlots.map((slot) => {
-                  const screenName = screens.find(s => s.id === slot.screen_id)?.screen_name || 'Unknown Screen';
-                  const isEditing = editingTimeSlot === slot.id;
-                  return (
-                    <div key={slot.id} className="bg-white border rounded p-3 group">
-                      <div className="flex items-center justify-between mb-2">
-                        {isEditing ? (
-                          <div className="flex items-center space-x-2 flex-1">
-                            <Input
-                              value={editValues[`${slot.id}_start`] || ''}
-                              onChange={(e) => setEditValues({
-                                ...editValues,
-                                [`${slot.id}_start`]: e.target.value
-                              })}
-                              placeholder="12:30 PM"
-                              className="text-sm h-8 w-20"
-                            />
-                            <span className="text-sm">-</span>
-                            <Input
-                              value={editValues[`${slot.id}_end`] || ''}
-                              onChange={(e) => setEditValues({
-                                ...editValues,
-                                [`${slot.id}_end`]: e.target.value
-                              })}
-                              placeholder="3:30 PM"
-                              className="text-sm h-8 w-20"
-                            />
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleTimeSlotEditSave(slot.id)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Check className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleTimeSlotEditCancel(slot.id)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <X className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-900">
-                              {convertTo12Hour(slot.start_time)} - {convertTo12Hour(slot.end_time)}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleTimeSlotEditStart(slot.id, slot.start_time, slot.end_time)}
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                        <Badge className={slot.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                          {slot.is_available ? 'Available' : 'Booked'}
-                        </Badge>
-                      </div>
-                     
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-600 text-center py-8">No time slots found for this theater.</p>
-            )}
-          </Card>
+
         </div>
 
         {/* Sidebar */}

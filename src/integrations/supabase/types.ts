@@ -1602,6 +1602,7 @@ export type Database = {
           screen_name: string
           screen_number: number
           theater_id: string
+          time_slots: Json | null
           total_capacity: number | null
           updated_at: string | null
           video_url: string | null
@@ -1621,6 +1622,7 @@ export type Database = {
           screen_name: string
           screen_number: number
           theater_id: string
+          time_slots?: Json | null
           total_capacity?: number | null
           updated_at?: string | null
           video_url?: string | null
@@ -1640,6 +1642,7 @@ export type Database = {
           screen_name?: string
           screen_number?: number
           theater_id?: string
+          time_slots?: Json | null
           total_capacity?: number | null
           updated_at?: string | null
           video_url?: string | null

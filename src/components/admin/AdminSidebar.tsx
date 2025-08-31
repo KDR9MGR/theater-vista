@@ -43,9 +43,9 @@ export function AdminSidebar() {
       collapsible="icon"
     >
       <SidebarContent className="bg-sidebar">
-        <div className="p-6 border-b border-sidebar-border">
+        <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-center">
-            <div className="w-56 h-56 bg-white rounded-lg flex items-center justify-center p-2">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-white rounded-lg flex items-center justify-center p-2">
               <img
                 src="/app_logo.svg"
                 alt="Logo"
