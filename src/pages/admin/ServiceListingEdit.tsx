@@ -1085,7 +1085,7 @@ export function ServiceListingEdit() {
                       <Label htmlFor="is_featured">Featured</Label>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <Label htmlFor="rating">Rating</Label>
                       <Input
@@ -1097,26 +1097,6 @@ export function ServiceListingEdit() {
                         value={serviceData.rating || ''}
                         onChange={(e) => updateField('rating', parseFloat(e.target.value) || 0)}
                         placeholder="0.0"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="reviews_count">Reviews Count</Label>
-                      <Input
-                        id="reviews_count"
-                        type="number"
-                        value={serviceData.reviews_count || ''}
-                        onChange={(e) => updateField('reviews_count', parseInt(e.target.value) || 0)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="offers_count">Offers Count</Label>
-                      <Input
-                        id="offers_count"
-                        type="number"
-                        value={serviceData.offers_count || ''}
-                        onChange={(e) => updateField('offers_count', parseInt(e.target.value) || 0)}
-                        placeholder="0"
                       />
                     </div>
                   </div>

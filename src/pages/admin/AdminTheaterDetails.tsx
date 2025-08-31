@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +23,7 @@ interface TheaterDetails {
   capacity: number;
   approval_status: string | null;
   is_active: boolean | null;
+  is_verified: boolean | null;
   created_at: string | null;
   description?: string | null;
   latitude?: number | null;
@@ -88,12 +90,38 @@ export default function AdminTheaterDetails() {
   const [editingAmenity, setEditingAmenity] = useState<string | null>(null);
   const [newAmenity, setNewAmenity] = useState<string>('');
   const [editValues, setEditValues] = useState<{[key: string]: string}>({});
+  const [addOns, setAddOns] = useState<any[]>([]);
+  const [editingAddOnId, setEditingAddOnId] = useState<string | null>(null);
+  const [editingAddOn, setEditingAddOn] = useState<{name: string, price: number, image: string}>({name: '', price: 0, image: ''});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (theaterId) {
       fetchTheaterDetails();
       fetchTheaterScreens();
       fetchTimeSlots();
+      // Load sample add-ons data
+      setAddOns([
+        {
+          id: '1',
+          name: 'Premium Sound System',
+          price: 500,
+          image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop'
+        },
+        {
+          id: '2',
+          name: 'LED Lighting Package',
+          price: 300,
+          image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=100&h=100&fit=crop'
+        },
+        {
+          id: '3',
+          name: 'Decoration Package',
+          price: 200,
+          image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=100&h=100&fit=crop'
+        }
+      ]);
     }
   }, [theaterId]);
 
@@ -245,6 +273,74 @@ export default function AdminTheaterDetails() {
     }
   };
 
+  const handleActiveToggle = async (newActiveStatus: boolean) => {
+    if (!theater) return;
+
+    try {
+      const { error } = await supabase
+        .from('private_theaters')
+        .update({ is_active: newActiveStatus })
+        .eq('id', theater.id);
+
+      if (error) {
+        console.error('Error updating active status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update active status",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setTheater({ ...theater, is_active: newActiveStatus });
+      toast({
+        title: "Success",
+        description: `Theater ${newActiveStatus ? 'activated' : 'deactivated'} successfully`,
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleVerifiedToggle = async (newVerifiedStatus: boolean) => {
+    if (!theater) return;
+
+    try {
+      const { error } = await supabase
+        .from('private_theaters')
+        .update({ is_verified: newVerifiedStatus })
+        .eq('id', theater.id);
+
+      if (error) {
+        console.error('Error updating verified status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update verified status",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setTheater({ ...theater, is_verified: newVerifiedStatus });
+      toast({
+        title: "Success",
+        description: `Theater ${newVerifiedStatus ? 'verified' : 'unverified'} successfully`,
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateScreenName = async (screenId: string, newName: string) => {
     try {
       const { error } = await supabase
@@ -279,6 +375,71 @@ export default function AdminTheaterDetails() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditAddOn = (addOn: any) => {
+    setEditingAddOnId(addOn.id);
+    setEditingAddOn({
+      name: addOn.name,
+      price: addOn.price,
+      image: addOn.image
+    });
+  };
+
+  const handleSaveAddOn = async () => {
+    if (!editingAddOnId) return;
+
+    try {
+      // Here you would typically update the add-on in your database
+      // For now, we'll just update the local state
+      setAddOns(addOns.map(addOn => 
+        addOn.id === editingAddOnId 
+          ? { ...addOn, ...editingAddOn }
+          : addOn
+      ));
+      
+      setEditingAddOnId(null);
+      setEditingAddOn({name: '', price: 0, image: ''});
+      
+      toast({
+        title: "Success",
+        description: "Add-on updated successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update add-on",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEditAddOn = () => {
+    setEditingAddOnId(null);
+    setEditingAddOn({name: '', price: 0, image: ''});
+    setSelectedImageFile(null);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImageFile(file);
+      setUploadingImage(true);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setEditingAddOn({...editingAddOn, image: result});
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImageFile(null);
+    setEditingAddOn({...editingAddOn, image: ''});
   };
 
   const updateDiscountedPrice = async (screenId: string, newPrice: number) => {
@@ -647,23 +808,7 @@ export default function AdminTheaterDetails() {
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Theater Details</h1>
         </div>
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => handleStatusUpdate('approved')}
-            className="bg-green-600 hover:bg-green-700"
-            disabled={theater.approval_status === 'approved'}
-          >
-            <Shield className="mr-2 h-4 w-4" />
-            Approve
-          </Button>
-          <Button
-            onClick={() => handleStatusUpdate('rejected')}
-            variant="destructive"
-            disabled={theater.approval_status === 'rejected'}
-          >
-            Reject
-          </Button>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1000,11 +1145,19 @@ export default function AdminTheaterDetails() {
                   {theater.approval_status || 'pending'}
                 </Badge>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-600">Active:</span>
-                <Badge className={theater.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                  {theater.is_active ? 'Yes' : 'No'}
-                </Badge>
+                <Switch
+                  checked={theater.is_active || false}
+                  onCheckedChange={handleActiveToggle}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Verified:</span>
+                <Switch
+                  checked={theater.is_verified || false}
+                  onCheckedChange={handleVerifiedToggle}
+                />
               </div>
             </div>
           </Card>
@@ -1021,6 +1174,97 @@ export default function AdminTheaterDetails() {
                 <span className="text-gray-600">Created:</span>
                 <span className="font-medium">{new Date(theater.created_at).toLocaleDateString()}</span>
               </div>
+            </div>
+          </Card>
+
+          {/* Theater Owner Add-ons */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Theater Owner Add-ons</h3>
+            <div className="space-y-4">
+              {addOns.length === 0 ? (
+                <p className="text-gray-600 text-sm">No add-ons available</p>
+              ) : (
+                addOns.map((addOn) => (
+                  <div key={addOn.id} className="border rounded-lg p-4">
+                    {editingAddOnId === addOn.id ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            {editingAddOn.image && (
+                              <div className="relative inline-block">
+                                <img 
+                                  src={editingAddOn.image} 
+                                  alt="Preview" 
+                                  className="w-20 h-20 object-cover rounded-lg border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={removeSelectedImage}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                            {uploadingImage && (
+                              <p className="text-sm text-gray-500">Uploading image...</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                          <Input
+                            value={editingAddOn.name}
+                            onChange={(e) => setEditingAddOn({...editingAddOn, name: e.target.value})}
+                            placeholder="Enter add-on name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                          <Input
+                            type="number"
+                            value={editingAddOn.price}
+                            onChange={(e) => setEditingAddOn({...editingAddOn, price: parseFloat(e.target.value) || 0})}
+                            placeholder="Enter price"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={handleSaveAddOn} size="sm">
+                            Save
+                          </Button>
+                          <Button onClick={handleCancelEditAddOn} variant="outline" size="sm">
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                          {addOn.image ? (
+                            <img src={addOn.image} alt={addOn.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-gray-400 text-xs">No Image</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{addOn.name}</h4>
+                          <p className="text-gray-600">₹{addOn.price}</p>
+                        </div>
+                        <Button onClick={() => handleEditAddOn(addOn)} variant="outline" size="sm">
+                          Edit
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </Card>
 

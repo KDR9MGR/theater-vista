@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -36,6 +38,7 @@ interface ServiceListing {
   offer_price: number;
   is_active: boolean;
   is_featured: boolean;
+  is_verified: boolean;
   rating: number;
   reviews_count: number;
   created_at: string;
@@ -57,6 +60,7 @@ export function ServiceListingsTable({ vendorId }: ServiceListingsTableProps) {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchServices();
@@ -117,6 +121,35 @@ export function ServiceListingsTable({ vendorId }: ServiceListingsTableProps) {
   const getUniqueCategories = () => {
     const categories = services.map(service => service.category).filter(Boolean);
     return [...new Set(categories)];
+  };
+
+  const handleVerifiedToggle = async (serviceId: string, currentVerified: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('service_listings')
+        .update({ is_verified: !currentVerified })
+        .eq('id', serviceId);
+
+      if (error) throw error;
+
+      setServices(services.map(service => 
+        service.id === serviceId 
+          ? { ...service, is_verified: !currentVerified }
+          : service
+      ));
+
+      toast({
+        title: "Success",
+        description: `Service ${!currentVerified ? 'verified' : 'unverified'} successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating verified status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update verified status",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -188,6 +221,7 @@ export function ServiceListingsTable({ vendorId }: ServiceListingsTableProps) {
               <TableHead className="font-medium text-foreground">Price</TableHead>
               <TableHead className="font-medium text-foreground">Rating</TableHead>
               <TableHead className="font-medium text-foreground">Status</TableHead>
+              <TableHead className="font-medium text-foreground">Verified</TableHead>
               <TableHead className="font-medium text-foreground">Created</TableHead>
               <TableHead className="font-medium text-foreground w-12">Actions</TableHead>
             </TableRow>
@@ -255,6 +289,12 @@ export function ServiceListingsTable({ vendorId }: ServiceListingsTableProps) {
                   <Badge className={service.is_active ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
                     {service.is_active ? 'Active' : 'Inactive'}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={service.is_verified || false}
+                    onCheckedChange={() => handleVerifiedToggle(service.id, service.is_verified || false)}
+                  />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(service.created_at).toLocaleDateString()}
