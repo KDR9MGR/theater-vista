@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, X, Upload, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Save, X, Upload, ChevronDown, ChevronUp, Download, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,6 +60,9 @@ export function ServiceListingEdit() {
   const [watermarkPosition, setWatermarkPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'>('bottom-right');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [replacingPhotoIndex, setReplacingPhotoIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -117,7 +120,7 @@ export function ServiceListingEdit() {
 
       if (error) throw error;
       toast.success('Service listing updated successfully');
-      navigate('/admin/service-listings');
+      navigate('/admin/services');
     } catch (error) {
       console.error('Error updating service listing:', error);
       toast.error('Failed to update service listing');
@@ -268,6 +271,170 @@ export function ServiceListingEdit() {
       toast.error(error.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
+      // Reset file input
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handleDownloadPhoto = async (photoUrl: string, index: number) => {
+    try {
+      const response = await fetch(photoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `photo_${index + 1}_${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Photo downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading photo:', error);
+      toast.error('Failed to download photo');
+    }
+  };
+
+  const handleReplacePhoto = (index: number) => {
+    setReplacingPhotoIndex(index);
+    photoInputRef.current?.click();
+  };
+
+  const handleAddPhoto = () => {
+    addPhotoInputRef.current?.click();
+  };
+
+  const handleAddPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // File validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (JPG, PNG, WebP)');
+      return;
+    }
+    
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      let fileToUpload = file;
+      
+      // Apply watermark if enabled
+      if (applyWatermark) {
+        try {
+          fileToUpload = await applyWatermarkToImage(file);
+          console.log('Watermark applied successfully');
+        } catch (watermarkError) {
+          console.warn('Watermark application failed, using original image:', watermarkError);
+          toast.warning('Watermark could not be applied, uploading original image');
+        }
+      }
+      
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const filePath = `${serviceData?.vendor_id || 'admin'}/service-media/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('service-listing-media')
+        .upload(filePath, fileToUpload);
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('service-listing-media')
+        .getPublicUrl(filePath);
+
+      // Add the new photo to the photos array
+      const currentPhotos = serviceData?.photos || [];
+      updateField('photos', [...currentPhotos, publicUrl]);
+      
+      toast.success(`Photo added successfully${applyWatermark ? ' with watermark' : ''}`);
+    } catch (error: any) {
+      console.error('Error adding photo:', error);
+      toast.error(error.message || 'Failed to add photo. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handlePhotoReplacement = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || replacingPhotoIndex === null) return;
+
+    // File validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (JPG, PNG, WebP)');
+      return;
+    }
+    
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      let fileToUpload = file;
+      
+      // Apply watermark if enabled
+      if (applyWatermark) {
+        try {
+          fileToUpload = await applyWatermarkToImage(file);
+          console.log('Watermark applied successfully');
+        } catch (watermarkError) {
+          console.warn('Watermark application failed, using original image:', watermarkError);
+          toast.warning('Watermark could not be applied, uploading original image');
+        }
+      }
+      
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const filePath = `${serviceData?.vendor_id || 'admin'}/service-media/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('service-listing-media')
+        .upload(filePath, fileToUpload);
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('service-listing-media')
+        .getPublicUrl(filePath);
+
+      // Replace the photo at the specific index
+      const newPhotos = [...(serviceData?.photos || [])];
+      newPhotos[replacingPhotoIndex] = publicUrl;
+      updateField('photos', newPhotos);
+      
+      toast.success(`Photo replaced successfully${applyWatermark ? ' with watermark' : ''}`);
+    } catch (error: any) {
+      console.error('Error replacing photo:', error);
+      toast.error(error.message || 'Failed to replace photo. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      setReplacingPhotoIndex(null);
       // Reset file input
       if (event.target) {
         event.target.value = '';
@@ -642,18 +809,41 @@ export function ServiceListingEdit() {
                          className="w-full h-32 object-cover rounded-lg border shadow-sm"
                        />
                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                         <Button
-                           type="button"
-                           variant="destructive"
-                           size="sm"
-                           className="opacity-0 group-hover:opacity-100 transition-opacity"
-                           onClick={() => {
-                             const newPhotos = serviceData.photos?.filter((_, i) => i !== index) || [];
-                             updateField('photos', newPhotos);
-                           }}
-                         >
-                           <X className="h-4 w-4" />
-                         </Button>
+                         <div className="flex gap-2">
+                           <Button
+                             type="button"
+                             variant="secondary"
+                             size="sm"
+                             className="opacity-0 group-hover:opacity-100 transition-opacity"
+                             onClick={() => handleDownloadPhoto(photo, index)}
+                             title="Download photo"
+                           >
+                             <Download className="h-4 w-4" />
+                           </Button>
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             className="opacity-0 group-hover:opacity-100 transition-opacity"
+                             onClick={() => handleReplacePhoto(index)}
+                             title="Replace photo"
+                           >
+                             <RefreshCw className="h-4 w-4" />
+                           </Button>
+                           <Button
+                             type="button"
+                             variant="destructive"
+                             size="sm"
+                             className="opacity-0 group-hover:opacity-100 transition-opacity"
+                             onClick={() => {
+                               const newPhotos = serviceData.photos?.filter((_, i) => i !== index) || [];
+                               updateField('photos', newPhotos);
+                             }}
+                             title="Delete photo"
+                           >
+                             <X className="h-4 w-4" />
+                           </Button>
+                         </div>
                        </div>
                      </div>
                    ))}
@@ -665,36 +855,35 @@ export function ServiceListingEdit() {
                )}
                
                <div className="flex gap-2">
-                 <Input
-                   placeholder="Enter image URL to add"
-                   onKeyPress={(e) => {
-                     if (e.key === 'Enter') {
-                       const input = e.target as HTMLInputElement;
-                       const url = input.value.trim();
-                       if (url) {
-                         const currentPhotos = serviceData.photos || [];
-                         updateField('photos', [...currentPhotos, url]);
-                         input.value = '';
-                       }
-                     }
-                   }}
-                 />
                  <Button
                    type="button"
                    variant="outline"
-                   onClick={(e) => {
-                     const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
-                     const url = input.value.trim();
-                     if (url) {
-                       const currentPhotos = serviceData.photos || [];
-                       updateField('photos', [...currentPhotos, url]);
-                       input.value = '';
-                     }
-                   }}
+                   onClick={handleAddPhoto}
+                   disabled={uploadingImage}
+                   className="flex items-center gap-2"
                  >
-                   Add Photo
+                   <Upload className="h-4 w-4" />
+                   {uploadingImage ? 'Uploading...' : 'Add Photo'}
                  </Button>
                </div>
+               
+               {/* Hidden file input for photo replacement */}
+               <input
+                 ref={photoInputRef}
+                 type="file"
+                 accept="image/*"
+                 onChange={handlePhotoReplacement}
+                 style={{ display: 'none' }}
+               />
+               
+               {/* Hidden file input for adding new photos */}
+               <input
+                 ref={addPhotoInputRef}
+                 type="file"
+                 accept="image/*"
+                 onChange={handleAddPhotoUpload}
+                 style={{ display: 'none' }}
+               />
              </div>
 
 

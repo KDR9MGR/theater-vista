@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Users, Building, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Users, Building, Edit2, Check, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -85,6 +85,8 @@ export default function AdminTheaterDetails() {
   const [editingScreen, setEditingScreen] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editingTimeSlot, setEditingTimeSlot] = useState<string | null>(null);
+  const [editingAmenity, setEditingAmenity] = useState<string | null>(null);
+  const [newAmenity, setNewAmenity] = useState<string>('');
   const [editValues, setEditValues] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
@@ -488,6 +490,115 @@ export default function AdminTheaterDetails() {
     setEditValues(newEditValues);
   };
 
+  const addAmenity = async (screenId: string, amenity: string) => {
+    if (!amenity.trim()) {
+      toast({
+        title: "Error",
+        description: "Amenity name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const screen = screens.find(s => s.id === screenId);
+      if (!screen) return;
+
+      const currentAmenities = screen.amenities || [];
+      const updatedAmenities = [...currentAmenities, amenity.trim()];
+
+      const { error } = await supabase
+        .from('theater_screens')
+        .update({ amenities: updatedAmenities })
+        .eq('id', screenId);
+
+      if (error) {
+        console.error('Error adding amenity:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add amenity",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setScreens(screens.map(s => 
+        s.id === screenId ? { ...s, amenities: updatedAmenities } : s
+      ));
+      
+      setNewAmenity('');
+      setEditingAmenity(null);
+      
+      toast({
+        title: "Success",
+        description: "Amenity added successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeAmenity = async (screenId: string, amenityIndex: number) => {
+    try {
+      const screen = screens.find(s => s.id === screenId);
+      if (!screen || !screen.amenities) return;
+
+      const updatedAmenities = screen.amenities.filter((_, index) => index !== amenityIndex);
+
+      const { error } = await supabase
+        .from('theater_screens')
+        .update({ amenities: updatedAmenities })
+        .eq('id', screenId);
+
+      if (error) {
+        console.error('Error removing amenity:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove amenity",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setScreens(screens.map(s => 
+        s.id === screenId ? { ...s, amenities: updatedAmenities } : s
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Amenity removed successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddAmenityStart = (screenId: string) => {
+    setEditingAmenity(screenId);
+    setNewAmenity('');
+  };
+
+  const handleAddAmenityCancel = () => {
+    setEditingAmenity(null);
+    setNewAmenity('');
+  };
+
+  const handleAddAmenitySave = async (screenId: string) => {
+    await addAmenity(screenId, newAmenity);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
@@ -729,18 +840,62 @@ export default function AdminTheaterDetails() {
                           </div>
                         )}
                       </div>
-                      {screen.amenities && screen.amenities.length > 0 && (
-                        <div>
-                          <span className="block mb-1">Amenities:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {screen.amenities.map((amenity, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {amenity}
-                              </Badge>
-                            ))}
-                          </div>
+                      <div>
+                        <span className="block mb-1">Amenities:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {screen.amenities && screen.amenities.map((amenity, index) => (
+                            <Badge key={index} variant="outline" className="text-xs group relative">
+                              {amenity}
+                              <button
+                                onClick={() => removeAmenity(screen.id, index)}
+                                className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
+                                title="Remove amenity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {editingAmenity === screen.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={newAmenity}
+                                onChange={(e) => setNewAmenity(e.target.value)}
+                                placeholder="Enter amenity"
+                                className="h-6 text-xs w-24"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleAddAmenitySave(screen.id);
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddAmenitySave(screen.id)}
+                                className="h-6 px-2"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleAddAmenityCancel}
+                                className="h-6 px-2"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-xs cursor-pointer hover:bg-gray-100 border-dashed"
+                              onClick={() => handleAddAmenityStart(screen.id)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Amenity
+                            </Badge>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 ))}
