@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X, Plus, Check, Upload, Trash2, Edit, Cake, Star, Gift, Sparkles, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TimeSlot {
@@ -64,11 +66,38 @@ export default function ScreenEdit() {
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [activeTab, setActiveTab] = useState<'cake' | 'special_service' | 'extra-special-service' | 'decorations'>('cake');
   const [editingAddOn, setEditingAddOn] = useState<string | null>(null);
-  const [newAddOn, setNewAddOn] = useState<Partial<AddOn>>({ name: '', price: 0, image: '', category: 'cake' });
+  const [newAddOn, setNewAddOn] = useState({ name: '', price: 0, image: '', description: '', category: 'cake' });
 
   useEffect(() => {
     fetchScreenDetails();
   }, [screenId]);
+
+  const fetchTheaterAddOns = async (theaterId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('add_ons')
+        .select('*')
+        .eq('theater_id', theaterId);
+
+      if (error) throw error;
+      
+      // Transform database data to match our AddOn interface
+      const theaterAddOns: AddOn[] = data.map((addon: any) => ({
+        id: addon.id.toString(),
+        name: addon.name,
+        price: addon.price,
+        image: addon.image || '/placeholder.svg',
+        category: addon.category,
+        description: addon.description || ''
+      }));
+      
+      setAddOns(theaterAddOns);
+    } catch (error) {
+      console.error('Error fetching theater add-ons:', error);
+      // Set empty array if error occurs
+      setAddOns([]);
+    }
+  };
 
   const fetchScreenDetails = async () => {
     try {
@@ -101,18 +130,8 @@ export default function ScreenEdit() {
         setTimeSlots(defaultSlots);
       }
       
-      // Initialize sample add-ons
-      const sampleAddOns: AddOn[] = [
-        { id: '1', name: 'Chocolate Cake', price: 25, image: '/placeholder.svg', category: 'cake', description: 'Delicious chocolate cake' },
-        { id: '2', name: 'Vanilla Cake', price: 20, image: '/placeholder.svg', category: 'cake', description: 'Classic vanilla cake' },
-        { id: '3', name: 'Photography Service', price: 100, image: '/placeholder.svg', category: 'special_service', description: 'Professional photography' },
-        { id: '4', name: 'DJ Service', price: 150, image: '/placeholder.svg', category: 'special_service', description: 'Professional DJ service' },
-        { id: '5', name: 'Premium Sound System', price: 200, image: '/placeholder.svg', category: 'extra-special-service', description: 'High-end audio equipment' },
-        { id: '6', name: 'LED Lighting', price: 180, image: '/placeholder.svg', category: 'extra-special-service', description: 'Professional LED lighting setup' },
-        { id: '7', name: 'Balloon Decoration', price: 50, image: '/placeholder.svg', category: 'decorations', description: 'Colorful balloon arrangements' },
-        { id: '8', name: 'Flower Decoration', price: 80, image: '/placeholder.svg', category: 'decorations', description: 'Fresh flower arrangements' },
-      ];
-      setAddOns(sampleAddOns);
+      // Fetch theater-specific add-ons
+      await fetchTheaterAddOns(data.theater_id);
     } catch (error) {
       console.error('Error fetching screen details:', error);
       toast({
@@ -231,30 +250,96 @@ export default function ScreenEdit() {
     ));
   };
 
-  const addNewAddOn = () => {
-    if (!newAddOn.name || !newAddOn.price) return;
+  const addNewAddOn = async () => {
+    if (!newAddOn.name || !newAddOn.price || !screen?.theater_id) return;
     
-    const addOn: AddOn = {
-      id: Date.now().toString(),
-      name: newAddOn.name,
-      price: newAddOn.price,
-      image: newAddOn.image || '/placeholder.svg',
-      category: newAddOn.category || 'cake',
-      description: newAddOn.description
-    };
-    
-    setAddOns([...addOns, addOn]);
-    setNewAddOn({ name: '', price: 0, image: '', category: activeTab });
+    try {
+      const { data, error } = await supabase
+        .from('add_ons')
+        .insert({
+          name: newAddOn.name,
+          price: newAddOn.price,
+          image: newAddOn.image || '/placeholder.svg',
+          category: activeTab,
+          description: newAddOn.description || '',
+          theater_id: screen.theater_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const addOn: AddOn = {
+        id: data.id.toString(),
+        name: data.name,
+        price: data.price,
+        image: data.image || '/placeholder.svg',
+        category: data.category,
+        description: data.description || ''
+      };
+      
+      setAddOns([...addOns, addOn]);
+      setNewAddOn({ name: '', price: 0, image: '', category: activeTab });
+      
+      toast({
+        title: 'Success',
+        description: 'Add-on created successfully',
+      });
+    } catch (error) {
+      console.error('Error adding new add-on:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create add-on',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const updateAddOn = (id: string, field: keyof AddOn, value: string | number) => {
-    setAddOns(addOns.map(addOn => 
-      addOn.id === id ? { ...addOn, [field]: value } : addOn
-    ));
+  const updateAddOn = async (id: string, field: keyof AddOn, value: string | number) => {
+    try {
+      const { error } = await supabase
+        .from('add_ons')
+        .update({ [field]: value })
+        .eq('id', parseInt(id));
+
+      if (error) throw error;
+
+      setAddOns(addOns.map(addOn => 
+        addOn.id === id ? { ...addOn, [field]: value } : addOn
+      ));
+    } catch (error) {
+      console.error('Error updating add-on:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update add-on',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const removeAddOn = (id: string) => {
-    setAddOns(addOns.filter(addOn => addOn.id !== id));
+  const removeAddOn = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('add_ons')
+        .delete()
+        .eq('id', parseInt(id));
+
+      if (error) throw error;
+
+      setAddOns(addOns.filter(addOn => addOn.id !== id));
+      
+      toast({
+        title: 'Success',
+        description: 'Add-on deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error removing add-on:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete add-on',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getTabIcon = (category: string) => {
