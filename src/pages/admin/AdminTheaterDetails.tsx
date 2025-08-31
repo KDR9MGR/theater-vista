@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Users, Building } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Calendar, Shield, Star, Users, Building, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,6 +82,10 @@ export default function AdminTheaterDetails() {
   const [loading, setLoading] = useState(true);
   const [screensLoading, setScreensLoading] = useState(false);
   const [timeSlotsLoading, setTimeSlotsLoading] = useState(false);
+  const [editingScreen, setEditingScreen] = useState<string | null>(null);
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [editingTimeSlot, setEditingTimeSlot] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     if (theaterId) {
@@ -238,6 +243,251 @@ export default function AdminTheaterDetails() {
     }
   };
 
+  const updateScreenName = async (screenId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('theater_screens')
+        .update({ screen_name: newName })
+        .eq('id', screenId);
+
+      if (error) {
+        console.error('Error updating screen name:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update screen name",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setScreens(screens.map(screen => 
+        screen.id === screenId ? { ...screen, screen_name: newName } : screen
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Screen name updated successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateDiscountedPrice = async (screenId: string, newPrice: number) => {
+    try {
+      const { error } = await supabase
+        .from('theater_screens')
+        .update({ discounted_hourly_price: newPrice })
+        .eq('id', screenId);
+
+      if (error) {
+        console.error('Error updating discounted price:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update discounted price",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setScreens(screens.map(screen => 
+        screen.id === screenId ? { ...screen, discounted_hourly_price: newPrice } : screen
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Discounted price updated successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditStart = (screenId: string, field: 'name' | 'price', currentValue: string | number) => {
+    if (field === 'name') {
+      setEditingScreen(screenId);
+      setEditValues({ ...editValues, [`${screenId}_name`]: currentValue.toString() });
+    } else {
+      setEditingPrice(screenId);
+      setEditValues({ ...editValues, [`${screenId}_price`]: currentValue.toString() });
+    }
+  };
+
+  const handleEditCancel = (screenId: string, field: 'name' | 'price') => {
+    if (field === 'name') {
+      setEditingScreen(null);
+    } else {
+      setEditingPrice(null);
+    }
+    const key = `${screenId}_${field === 'name' ? 'name' : 'price'}`;
+    const newEditValues = { ...editValues };
+    delete newEditValues[key];
+    setEditValues(newEditValues);
+  };
+
+  const handleEditSave = async (screenId: string, field: 'name' | 'price') => {
+    const key = `${screenId}_${field === 'name' ? 'name' : 'price'}`;
+    const value = editValues[key];
+    
+    if (!value || value.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Value cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (field === 'name') {
+      await updateScreenName(screenId, value.trim());
+      setEditingScreen(null);
+    } else {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid price",
+          variant: "destructive",
+        });
+        return;
+      }
+      await updateDiscountedPrice(screenId, numValue);
+      setEditingPrice(null);
+    }
+    
+    const newEditValues = { ...editValues };
+    delete newEditValues[key];
+    setEditValues(newEditValues);
+  };
+
+  // Time format conversion helpers
+  const convertTo12Hour = (time24: string) => {
+    const [hours, minutes, seconds] = time24.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const convertTo24Hour = (time12: string) => {
+    const [time, ampm] = time12.split(' ');
+    const [hours, minutes] = time.split(':');
+    let hour = parseInt(hours, 10);
+    
+    if (ampm === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (ampm === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}:00`;
+  };
+
+  const updateTimeSlot = async (slotId: string, startTime: string, endTime: string) => {
+    try {
+      const { error } = await supabase
+        .from('theater_time_slots')
+        .update({ 
+          start_time: convertTo24Hour(startTime),
+          end_time: convertTo24Hour(endTime)
+        })
+        .eq('id', slotId);
+
+      if (error) {
+        console.error('Error updating time slot:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update time slot",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setTimeSlots(timeSlots.map(slot => 
+        slot.id === slotId ? { 
+          ...slot, 
+          start_time: convertTo24Hour(startTime),
+          end_time: convertTo24Hour(endTime)
+        } : slot
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Time slot updated successfully",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTimeSlotEditStart = (slotId: string, startTime: string, endTime: string) => {
+    setEditingTimeSlot(slotId);
+    setEditValues({ 
+      ...editValues, 
+      [`${slotId}_start`]: convertTo12Hour(startTime),
+      [`${slotId}_end`]: convertTo12Hour(endTime)
+    });
+  };
+
+  const handleTimeSlotEditCancel = (slotId: string) => {
+    setEditingTimeSlot(null);
+    const newEditValues = { ...editValues };
+    delete newEditValues[`${slotId}_start`];
+    delete newEditValues[`${slotId}_end`];
+    setEditValues(newEditValues);
+  };
+
+  const handleTimeSlotEditSave = async (slotId: string) => {
+    const startTime = editValues[`${slotId}_start`];
+    const endTime = editValues[`${slotId}_end`];
+    
+    if (!startTime || !endTime) {
+      toast({
+        title: "Error",
+        description: "Both start and end times are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate time format
+    const timeRegex = /^(1[0-2]|0?[1-9]):[0-5][0-9] (AM|PM)$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      toast({
+        title: "Error",
+        description: "Please enter valid time format (e.g., 12:30 PM)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await updateTimeSlot(slotId, startTime, endTime);
+    setEditingTimeSlot(null);
+    
+    const newEditValues = { ...editValues };
+    delete newEditValues[`${slotId}_start`];
+    delete newEditValues[`${slotId}_end`];
+    setEditValues(newEditValues);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
@@ -383,7 +633,46 @@ export default function AdminTheaterDetails() {
                 {screens.map((screen) => (
                   <div key={screen.id} className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900">{screen.screen_name}</h4>
+                      <div className="flex items-center gap-2">
+                        {editingScreen === screen.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editValues[`${screen.id}_name`] || ''}
+                              onChange={(e) => setEditValues({ ...editValues, [`${screen.id}_name`]: e.target.value })}
+                              className="h-8 text-sm font-semibold"
+                              placeholder="Screen name"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditSave(screen.id, 'name')}
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditCancel(screen.id, 'name')}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">{screen.screen_name}</h4>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditStart(screen.id, 'name', screen.screen_name)}
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                       <Badge className="bg-blue-100 text-blue-800">
                         Screen #{screen.screen_number}
                       </Badge>
@@ -393,9 +682,52 @@ export default function AdminTheaterDetails() {
                         <span>Capacity:</span>
                         <span className="font-medium">{screen.capacity} seats</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Hourly Rate:</span>
-                        <span className="font-medium">₹{screen.hourly_rate}/hour</span>
+                    
+                      <div className="flex justify-between items-center">
+                        <span>Discounted Rate:</span>
+                        {editingPrice === screen.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editValues[`${screen.id}_price`] || ''}
+                              onChange={(e) => setEditValues({ ...editValues, [`${screen.id}_price`]: e.target.value })}
+                              className="h-6 w-20 text-xs"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditSave(screen.id, 'price')}
+                              className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                            >
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditCancel(screen.id, 'price')}
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {screen.discounted_hourly_price ? `₹${screen.discounted_hourly_price}` : 'Not set'}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditStart(screen.id, 'price', screen.discounted_hourly_price || 0)}
+                              className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600"
+                            >
+                              <Edit2 className="h-2 w-2" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       {screen.amenities && screen.amenities.length > 0 && (
                         <div>
@@ -429,22 +761,68 @@ export default function AdminTheaterDetails() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {timeSlots.map((slot) => {
                   const screenName = screens.find(s => s.id === slot.screen_id)?.screen_name || 'Unknown Screen';
+                  const isEditing = editingTimeSlot === slot.id;
                   return (
-                    <div key={slot.id} className="bg-white border rounded p-3">
+                    <div key={slot.id} className="bg-white border rounded p-3 group">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {slot.start_time} - {slot.end_time}
-                        </span>
+                        {isEditing ? (
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Input
+                              value={editValues[`${slot.id}_start`] || ''}
+                              onChange={(e) => setEditValues({
+                                ...editValues,
+                                [`${slot.id}_start`]: e.target.value
+                              })}
+                              placeholder="12:30 PM"
+                              className="text-sm h-8 w-20"
+                            />
+                            <span className="text-sm">-</span>
+                            <Input
+                              value={editValues[`${slot.id}_end`] || ''}
+                              onChange={(e) => setEditValues({
+                                ...editValues,
+                                [`${slot.id}_end`]: e.target.value
+                              })}
+                              placeholder="3:30 PM"
+                              className="text-sm h-8 w-20"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleTimeSlotEditSave(slot.id)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleTimeSlotEditCancel(slot.id)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-900">
+                              {convertTo12Hour(slot.start_time)} - {convertTo12Hour(slot.end_time)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleTimeSlotEditStart(slot.id, slot.start_time, slot.end_time)}
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                         <Badge className={slot.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                           {slot.is_available ? 'Available' : 'Booked'}
                         </Badge>
                       </div>
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <div>Screen: {screenName}</div>
-                        {slot.price_per_hour && (
-                          <div>Price: ₹{slot.price_per_hour}/hour</div>
-                        )}
-                      </div>
+                     
                     </div>
                   );
                 })}
