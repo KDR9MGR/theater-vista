@@ -17,6 +17,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminTheaterDetails from "./pages/admin/AdminTheaterDetails";
 import { ServiceListingEdit } from "./pages/admin/ServiceListingEdit";
 import ScreenEdit from "./pages/admin/ScreenEdit";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="theaters" element={<AdminTheaters />} />
             <Route path="theaters/:theaterId" element={<AdminTheaterDetails />} />
             <Route path="theaters/:theaterId/screens/:screenId/edit" element={<ScreenEdit />} />
+            <Route path="categories" element={<AdminCategories />} />
             <Route path="theme" element={<AdminTheme />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

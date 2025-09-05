@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   Palette,
+  Grid3X3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,6 +26,7 @@ const menuItems = [
   { title: "Vendors", url: "/admin/vendors", icon: Users },
   { title: "Event Decorators", url: "/admin/services", icon: Building2 },
   { title: "Private Theaters", url: "/admin/theaters", icon: Theater },
+  { title: "Categories", url: "/admin/categories", icon: Grid3X3 },
   { title: "App Theme Settings", url: "/admin/theme", icon: Palette },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
